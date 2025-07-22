@@ -125,3 +125,61 @@ def draw_brasas(brazas):
             b['y'] = 0
             b['x'] = random.randint(0, WIDTH)
         pygame.draw.circle(screen, ORANGE, (int(b['x']), int(b['y'])), 2)
+
+# Segmento 3: Funciones de Pantallas de Información (Historia, Muerte, Victoria)
+
+# Este segmento contiene la lógica para mostrar pantallas de información genéricas
+# utilizadas para la historia del juego, mensajes de victoria o derrota.
+# Incluye la función `mostrar_pantalla_info` y `mostrar_historia` que se usan
+# para pausar el juego y presentar texto importante al jugador.
+
+def mostrar_pantalla_info(titulo, descripcion, volver_a_menu=False):
+    esperando = True
+
+    titulo_font = pygame.font.SysFont("Arial Black", 36)
+    descripcion_font = pygame.font.SysFont("Arial", 24)
+    instruccion_font = pygame.font.SysFont("Arial", 20)
+
+    while esperando:
+        screen.fill(BLACK)
+        draw_brasas(menu_brasas)
+
+        panel_rect = pygame.Surface((600, 300), pygame.SRCALPHA)
+        panel_rect.fill((0, 0, 0, 180))  # Negro con transparencia
+        screen.blit(panel_rect, (WIDTH // 2 - 300, HEIGHT // 2 - 150))
+
+        titulo_surf = titulo_font.render(titulo, True, ORANGE if "¡Has muerto!" not in titulo else RED)
+        screen.blit(titulo_surf, (WIDTH // 2 - titulo_surf.get_width() // 2, HEIGHT // 2 - 130))
+
+        lineas = descripcion.split("\n")
+        for i, linea in enumerate(lineas):
+            texto_surf = descripcion_font.render(linea, True, WHITE)
+            screen.blit(texto_surf, (WIDTH // 2 - texto_surf.get_width() // 2, HEIGHT // 2 - 60 + i * 35))
+
+        instruccion_text = "Presiona ENTER para continuar..."
+        if volver_a_menu:
+            instruccion_text = "Presiona ENTER para volver al menú..."
+        instruccion = instruccion_font.render(instruccion_text, True, CYAN)
+        screen.blit(instruccion, (WIDTH // 2 - instruccion.get_width() // 2, HEIGHT // 2 + 100))
+
+        pygame.display.flip()
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
+                esperando = False
+
+def mostrar_historia(nivel):
+    historias = {
+        1: ("UNA INFECCIÓN RARA Y PELIGROSA",
+            "Un virus desconocido comenzó a propagarse entre la población.\nLos infectados ya no eran humanos..."),
+        2: ("CIUDADES EN RUINAS",
+            "La infección se ha extendido. Las ciudades han caído.\nPocos quedan en pie..."),
+        3: ("ÚLTIMA RESISTENCIA",
+            "Esta es tu última oportunidad.\nAcaba con el brote antes de que el mundo desaparezca.")
+    }
+
+    if nivel in historias:
+        titulo, descripcion = historias[nivel]
+        mostrar_pantalla_info(titulo, descripcion)
