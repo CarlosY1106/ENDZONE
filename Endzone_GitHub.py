@@ -63,4 +63,65 @@ jefe_imgs = {
 }
 
 # Nueva imagen de mancha de sangre
-blood_stain_img = cargar_imagen_ruta("Sangre.png", 50, 50) # Tamaño ajustable
+blood_stain_img = cargar_imagen_ruta("Sangre.png", 50, 50)
+
+# Segmento 2: Estructura del Menú Principal y Funciones de Utilidad de UI
+
+# Este segmento define las variables de estado del juego para el menú y las instrucciones,
+# así como el logotipo del menú y las partículas de "brasas" para el fondo.
+# Incluye las funciones para dibujar botones y barras de salud personalizadas,
+# elementos clave para la interacción del usuario.
+
+show_menu = True
+run_game = False
+show_instructions = False
+
+# Logotipo para menú
+logotipo_img = cargar_imagen_ruta("Logotipo.png", 300, 300)
+
+# Brasas para fondo menú e historia
+menu_brasas = [{'x': random.randint(0, WIDTH), 'y': random.randint(0, HEIGHT), 'speed': random.uniform(0.2, 0.6)} for _ in range(60)]
+
+def draw_button(text, x, y, w, h, base_color, hover_color, action=None):
+    mouse = pygame.mouse.get_pos()
+    click = pygame.mouse.get_pressed()
+    rect = pygame.Rect(x, y, w, h)
+    is_hovered = rect.collidepoint(mouse)
+
+    pygame.draw.rect(screen, WHITE, rect, border_radius=10)
+    inner_rect = rect.inflate(-4, -4)
+    pygame.draw.rect(screen, hover_color if is_hovered else base_color, inner_rect, border_radius=8)
+
+    text_surf = button_font.render(text, True, BLACK)
+    text_rect = text_surf.get_rect(center=rect.center)
+    screen.blit(text_surf, text_rect)
+
+    if is_hovered and click[0] == 1 and action:
+        pygame.time.wait(150)
+        action()
+
+def draw_health_bar(x, y, width, height, current_health, max_health, border_color, fill_color, back_color, label="", label_pos="above"):
+    # Dibuja el texto de la etiqueta primero si está "arriba"
+    if label and label_pos == "above":
+        label_surf = info_font.render(label, True, WHITE)
+        screen.blit(label_surf, (x, y - label_surf.get_height() - 5)) # 5 píxeles de padding
+
+    back_rect = pygame.Rect(x, y, width, height)
+    pygame.draw.rect(screen, back_color, back_rect)
+    fill_width = int(width * (current_health / max_health))
+    fill_rect = pygame.Rect(x, y, fill_width, height)
+    pygame.draw.rect(screen, fill_color, fill_rect)
+    pygame.draw.rect(screen, border_color, back_rect, 2)
+
+    # Dibuja el texto de la etiqueta si está "debajo"
+    if label and label_pos == "below":
+        label_surf = info_font.render(label, True, WHITE)
+        screen.blit(label_surf, (x, y + height + 5)) # 5 píxeles de padding
+
+def draw_brasas(brazas):
+    for b in brazas:
+        b['y'] += b['speed']
+        if b['y'] > HEIGHT:
+            b['y'] = 0
+            b['x'] = random.randint(0, WIDTH)
+        pygame.draw.circle(screen, ORANGE, (int(b['x']), int(b['y'])), 2)
