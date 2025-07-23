@@ -247,3 +247,80 @@ def game_loop():
     mostrar_historia(nivel_actual)
 
     running = True
+
+# Segmento 5: Bucle Principal del Juego (Eventos y Movimiento del Jugador)
+
+# Este segmento contiene el corazón del bucle principal del juego (`while running`).
+# Maneja la actualización de la pantalla (fondo y partículas), los eventos de entrada
+# del usuario (teclado y ratón), el movimiento del jugador y la lógica de disparo
+# automático de proyectiles. También incluye la gestión de las brasas de fondo
+# y las manchas de sangre que se desvanecen.
+
+    while running:
+        dt = clock.tick(60)
+        screen.fill((15, 15, 15))  # Fondo oscuro
+
+        # Dibujar partículas (brasas)
+        for p in particles:
+            pygame.draw.circle(screen, ORANGE, (int(p['x']), int(p['y'])), p['radius'])
+            p['y'] -= p['speed']
+            if p['y'] < 0:
+                p['x'] = random.randint(0, WIDTH)
+                p['y'] = HEIGHT + random.randint(0, 100)
+                p['speed'] = random.uniform(0.2, 0.6)
+
+        # Dibujar manchas de sangre debajo de todo lo demás
+        for stain in blood_stains[:]: # Iterar sobre una copia para poder eliminar elementos
+            # Crea una superficie temporal para aplicar la transparencia
+            stain_surface = blood_stain_img.copy()
+            stain_surface.set_alpha(stain['alpha'])
+            screen.blit(stain_surface, (stain['x'] - stain_surface.get_width() // 2, stain['y'] - stain_surface.get_height() // 2))
+            stain['alpha'] -= 1 # Reducir la opacidad con el tiempo
+            if stain['alpha'] <= 0:
+                blood_stains.remove(stain)
+
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_w]: player_pos[1] -= player_speed
+        if keys[pygame.K_s]: player_pos[1] += player_speed
+        if keys[pygame.K_a]: player_pos[0] -= player_speed
+        if keys[pygame.K_d]: player_pos[0] += player_speed
+
+        # Keep player within screen bounds
+        player_pos[0] = max(player_radius, min(player_pos[0], WIDTH - player_radius))
+        player_pos[1] = max(player_radius, min(player_pos[1], HEIGHT - player_radius))
+
+
+        now = pygame.time.get_ticks()
+
+        # Disparar proyectiles automáticamente (cada shoot_delay ms)
+        if now - last_shot_time >= shoot_delay:
+            mouse_x, mouse_y = pygame.mouse.get_pos()
+            dx = mouse_x - player_pos[0]
+            dy = mouse_y - player_pos[1]
+            dist = math.hypot(dx, dy)
+            if dist != 0:
+                dx /= dist
+                dy /= dist
+            projectiles.append({'x': player_pos[0], 'y': player_pos[1], 'dx': dx, 'dy': dy})
+            weapon_shoot_sound.play() # Play weapon sound
+            if habilidad_actual == 1:
+                offset = math.pi / 12
+                cos_off = math.cos(offset)
+                sin_off = math.sin(offset)
+                dx1, dy1 = dx * cos_off - dy * sin_off, dx * sin_off + dy * cos_off
+                dx2, dy2 = dx * cos_off + dy * sin_off, -dx * sin_off + dy * cos_off
+                projectiles.append({'x': player_pos[0], 'y': player_pos[1], 'dx': dx1, 'dy': dy1})
+                projectiles.append({'x': player_pos[0], 'y': player_pos[1], 'dx': dx2, 'dy': dy2})
+            last_shot_time = now
+
+        for p in projectiles[:]:
+            p['x'] += p['dx'] * projectile_speed
+            p['y'] += p['dy'] * projectile_speed
+            if not (0 <= p['x'] <= WIDTH and 0 <= p['y'] <= HEIGHT):
+                projectiles.remove(p)
