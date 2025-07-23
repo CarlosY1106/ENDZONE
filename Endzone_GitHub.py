@@ -183,3 +183,67 @@ def mostrar_historia(nivel):
     if nivel in historias:
         titulo, descripcion = historias[nivel]
         mostrar_pantalla_info(titulo, descripcion)
+
+# Segmento 4: Inicialización de la Lógica del Juego (Variables de Estado)
+
+# Este segmento define todas las variables iniciales para el estado del juego
+# en `game_loop`. Esto incluye la posición del jugador, salud, XP, nivel,
+# configuración de proyectiles, estado de los enemigos, y toda la información
+# necesaria para controlar el flujo y las estadísticas del juego.
+
+def game_loop():
+    global run_game, show_menu
+
+    # Partículas brasas fondo juego
+    particles = [{'x': random.randint(0, WIDTH), 'y': random.randint(0, HEIGHT), 'radius': random.randint(1, 3),
+                  'speed': random.uniform(0.2, 0.6)} for _ in range(120)]
+
+    player_pos = [WIDTH // 2, HEIGHT // 2]
+    # Adjust player_radius based on your character image size for better collision
+    player_radius = 25 # Changed from 75, as the image is much smaller than 150x150, for more accurate collision
+
+    base_speed = 4
+    player_speed = base_speed
+    player_health = 100
+    player_max_health = 100
+    player_xp = 0
+    player_level = 1
+    xp_to_next = 50
+
+    nivel_actual = 1
+    max_nivel = 3
+
+    habilidad_actual = 1
+    habilidad_nombres = {1: "Doble Tiro", 2: "Relentizador", 3: "Velocidad"}
+
+    ralentizar_enemigos = False
+    ralentizador_fin = 0
+
+    projectiles = []
+    projectile_speed = 7
+    shoot_delay = 500
+    last_shot_time = pygame.time.get_ticks()
+
+    enemies = []
+    enemy_spawn_delay = 1500
+    last_enemy_spawn = pygame.time.get_ticks()
+    enemy_base_speed = 1.5
+    enemy_speed = enemy_base_speed
+
+    jefe_activo = False
+    jefe_pos = None
+    jefe_vida = 0
+    jefe_max_vida = 0
+    jefe_danio = 10
+    jefe_speed = 2
+    jefe_proyectiles = []
+    jefe_disparo_delay = 1000
+    ultimo_disparo_jefe = 0
+
+    # Lista para almacenar las manchas de sangre
+    # Cada elemento será un diccionario {'x': x, 'y': y, 'alpha': 255}
+    blood_stains = []
+
+    mostrar_historia(nivel_actual)
+
+    running = True
