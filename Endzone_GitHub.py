@@ -499,3 +499,127 @@ def game_loop():
                     player_speed = base_speed * 1.8
 
                 ralentizar_enemigos = False # Reset slowdown after boss
+
+# Segmento 8: Dibujo de Elementos del Juego y HUD
+# Este segmento se encarga de dibujar todos los elementos visuales en la pantalla:
+# el jugador, los enemigos, los proyectiles del jugador y del jefe, y el jefe mismo.
+# También actualiza y dibuja el HUD (Heads-Up Display) con información vital
+# como el nivel del jugador, XP, fase actual y la habilidad activa,
+# incluyendo las barras de salud del jugador y del jefe.
+
+        # Dibujar jugador
+        screen.blit(personaje_img, (player_pos[0] - personaje_img.get_width() // 2, player_pos[1] - personaje_img.get_height() // 2))
+
+        # Dibujar enemigos
+        for enemy in enemies:
+            screen.blit(enemy['img'], (enemy['x'] - enemy['img'].get_width() // 2, enemy['y'] - enemy['img'].get_height() // 2))
+
+        # Dibujar proyectiles
+        for p in projectiles:
+            screen.blit(proyectil_img, (p['x'] - proyectil_img.get_width() // 2, p['y'] - proyectil_img.get_height() // 2))
+
+        # Dibujar jefe
+        if jefe_activo:
+            jefe_img = jefe_imgs.get(nivel_actual)
+            if jefe_img:
+                screen.blit(jefe_img, (int(jefe_pos[0] - jefe_img.get_width() // 2), int(jefe_pos[1] - jefe_img.get_height() // 2)))
+            else:
+                pygame.draw.circle(screen, RED, (int(jefe_pos[0]), int(jefe_pos[1])), 30)
+            for j in jefe_proyectiles:
+                screen.blit(proyectil_jefe_img, (int(j['x'] - proyectil_jefe_img.get_width() // 2), int(j['y'] - proyectil_jefe_img.get_height() // 2)))
+
+        # HUD
+        screen.blit(info_font.render(f"Nivel: {player_level}", True, WHITE), (10, 10))
+        screen.blit(info_font.render(f"XP: {player_xp}/{xp_to_next}", True, WHITE), (10, 35))
+        screen.blit(info_font.render(f"Fase: {nivel_actual}", True, WHITE), (10, 60))
+        screen.blit(info_font.render(f"Habilidad: {habilidad_nombres[habilidad_actual]}", True, WHITE), (10, 85))
+
+        if habilidad_actual == 2 and ralentizar_enemigos:
+            tiempo_restante = (ralentizador_fin - now) / 1000
+            screen.blit(info_font.render(f"Ralentizador activo: {tiempo_restante:.1f}s", True, WHITE), (10, 110))
+
+        # Barra de vida del jugador con etiqueta encima
+        draw_health_bar(10, HEIGHT - 35, 200, 25, player_health, player_max_health, WHITE, GREEN, DARK_RED, "Barra de salud de Rick", "above")
+
+        if jefe_activo:
+            # Etiqueta para el jefe según la fase
+            jefe_labels = {
+                1: "Barra de salud del Portador",
+                2: "Barra de salud del Acechador",
+                3: "Barra de salud del Susurrador"
+            }
+            jefe_label_text = jefe_labels.get(nivel_actual, f"Jefe Fase {nivel_actual}") # Fallback por si no existe la etiqueta
+
+            # Barra de vida del jefe con etiqueta debajo, reubicada para no sobreponerse
+            # Calculamos la posición x para que esté centrado con la barra de vida
+            jefe_bar_x = WIDTH - 260
+            jefe_bar_y = 50 # Un poco más abajo que antes para dejar espacio para el texto
+
+            draw_health_bar(jefe_bar_x, jefe_bar_y, 250, 25, jefe_vida, jefe_max_vida, WHITE, RED, DARK_RED, jefe_label_text, "below")
+
+        if player_health <= 0:
+            mostrar_pantalla_info("¡Has muerto!", "La infección ha consumido el mundo.\nNo hay esperanza...", volver_a_menu=True)
+            running = False
+            break
+
+        if nivel_actual > max_nivel:
+            mostrar_pantalla_info("¡HAS GANADO!", "El brote ha sido contenido.\nLa humanidad tiene una segunda oportunidad.", volver_a_menu=True)
+            running = False
+            break
+
+        pygame.display.flip()
+
+    run_game = False
+    show_menu = True
+
+def start_game():
+    global run_game, show_menu
+    run_game = True
+    show_menu = False
+
+def exit_game():
+    pygame.quit()
+    sys.exit()
+
+def show_instructions_screen():
+    global show_menu, show_instructions
+    show_instructions = True
+    show_menu = False
+
+# Bucle principal
+while True:
+    clock.tick(60)
+
+    if show_menu:
+        screen.fill(BLACK)
+        draw_brasas(menu_brasas)
+
+        # Logotipo centrado arriba
+        screen.blit(logotipo_img, (WIDTH // 2 - logotipo_img.get_width() // 2, 40))
+
+        # Botones menú
+        draw_button("Iniciar", WIDTH // 2 - 100, 360, 200, 50, ORANGE, LIGHT_ORANGE, start_game)
+        draw_button("Instrucciones", WIDTH // 2 - 100, 430, 200, 50, ORANGE, LIGHT_ORANGE, show_instructions_screen)
+        draw_button("Salir", WIDTH // 2 - 100, 500, 200, 50, ORANGE, LIGHT_ORANGE, exit_game)
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+
+        pygame.display.flip()
+
+    elif show_instructions:
+        mostrar_pantalla_info(
+            "INSTRUCCIONES",
+            "Muévete con W A S D\n"
+            "Apunta con el ratón y dispara automáticamente\n"
+            "Presiona ESPACIO para usar la habilidad del nivel 2\n"
+            "¡Sobrevive y derrota a los jefes!",
+            volver_a_menu=True
+        )
+        show_instructions = False
+        show_menu = True
+
+    elif run_game:
+        game_loop()
