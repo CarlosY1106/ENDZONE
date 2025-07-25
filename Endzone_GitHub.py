@@ -324,3 +324,109 @@ def game_loop():
             p['y'] += p['dy'] * projectile_speed
             if not (0 <= p['x'] <= WIDTH and 0 <= p['y'] <= HEIGHT):
                 projectiles.remove(p)
+# Segmento 6: Lógica de Enemigos y Habilidades del Jugador
+
+# Este segmento implementa la generación de enemigos, su movimiento para perseguir
+# al jugador, y las colisiones entre enemigos y proyectiles.
+# También gestiona la ganancia de XP, la subida de nivel del jugador y la activación
+# de habilidades especiales como la ralentización de enemigos o el aumento de velocidad.
+
+        if ralentizar_enemigos and now > ralentizador_fin:
+            ralentizar_enemigos = False
+            enemy_speed = enemy_base_speed
+
+        if not jefe_activo and now - last_enemy_spawn >= enemy_spawn_delay:
+            side = random.choice(['top', 'bottom', 'left', 'right'])
+            if side == 'top': x, y = random.randint(0, WIDTH), 0
+            elif side == 'bottom': x, y = random.randint(0, WIDTH), HEIGHT
+            elif side == 'left': x, y = 0, random.randint(0, HEIGHT)
+            else: x, y = WIDTH, random.randint(0, HEIGHT)
+            enemy_img = random.choice(zombie_imgs)
+            enemies.append({'x': x, 'y': y, 'speed': enemy_speed, 'img': enemy_img})
+            zombie_spawn_sound.play() # Play zombie spawn sound
+            last_enemy_spawn = now
+
+        for enemy in enemies[:]:
+            dx = player_pos[0] - enemy['x']
+            dy = player_pos[1] - enemy['y']
+            dist = math.hypot(dx, dy)
+            if dist != 0:
+                dx /= dist
+                dy /= dist
+            enemy['x'] += dx * enemy['speed']
+            enemy['y'] += dy * enemy['speed']
+
+        # Fix for game crashing on enemy collision
+        # Iterate over a copy of the list when modifying it
+        for enemy in enemies[:]:
+            if math.hypot(enemy['x'] - player_pos[0], enemy['y'] - player_pos[1]) < 40:
+                player_health -= 1
+
+            # Use a separate loop for projectiles to avoid skipping elements
+            # due to concurrent modification if an enemy is removed.
+            # This logic should be here to ensure XP and boss activation are checked for each enemy killed.
+            for p in projectiles[:]:
+                if math.hypot(enemy['x'] - p['x'], enemy['y'] - p['y']) < 30:
+                    # Check if enemy still exists before trying to remove it
+                    # This prevents the crash if the enemy was already removed
+                    # by another projectile in the same frame.
+                    if enemy in enemies: # Ensure the enemy is still in the list
+                        # Añadir mancha de sangre en la posición del enemigo
+                        blood_stains.append({'x': enemy['x'], 'y': enemy['y'], 'alpha': 255})
+
+                        enemies.remove(enemy)
+                        projectiles.remove(p)
+                        player_xp += 10
+                        if player_xp >= xp_to_next:
+                            player_level += 1
+                            player_xp = 0
+                            xp_to_next += 25
+                            # This block determines when the boss appears based on player level
+                            if player_level == 2 and nivel_actual == 1:
+                                jefe_activo = True
+                                jefe_proyectiles.clear()
+                                jefe_pos = [random.randint(100, WIDTH - 100), random.randint(100, HEIGHT - 100)]
+                                jefe_vida = jefe_max_vida = 8
+                                jefe_speed = 2
+                                jefe_danio = 10
+                                jefe_disparo_delay = 1200
+                                enemies.clear() # Clear remaining regular enemies when boss appears
+                            elif player_level == 3 and nivel_actual == 2:
+                                jefe_activo = True
+                                jefe_proyectiles.clear()
+                                jefe_pos = [random.randint(100, WIDTH - 100), random.randint(100, HEIGHT - 100)]
+                                jefe_vida = jefe_max_vida = 15
+                                jefe_speed = 3
+                                jefe_danio = 15
+                                jefe_disparo_delay = 800
+                                enemies.clear() # Clear remaining regular enemies when boss appears
+
+                            # Modified for Fase 3: Boss appears when player reaches level 4
+                            if player_level == 4 and nivel_actual == 3: # Boss for Nivel 3 appears when player reaches level 4
+                                jefe_activo = True
+                                jefe_proyectiles.clear()
+                                jefe_pos = [random.randint(100, WIDTH - 100), random.randint(100, HEIGHT - 100)]
+                                # Adjust boss 3 stats here to make it easier
+                                jefe_vida = jefe_max_vida = 15 # Reduced from 25
+                                jefe_speed = 3 # Reduced from 4.5
+                                jefe_danio = 15 # Reduced from 25
+                                jefe_disparo_delay = 600 # Increased from 400 (slower shots)
+                                enemies.clear() # Clear remaining regular enemies when boss appears
+
+                            # Habilidad update logic, independent of boss spawn
+                            if player_level == 2 and habilidad_actual < 2:
+                                habilidad_actual = 2
+                            elif player_level >= 3 and habilidad_actual < 3: # Player level 3 or higher gets speed ability
+                                habilidad_actual = 3
+
+
+        if habilidad_actual == 2 and not ralentizar_enemigos and player_level >= 2: # Changed to >=2 as ability is gained at level 2
+            if keys[pygame.K_SPACE]:
+                ralentizar_enemigos = True
+                enemy_speed = enemy_base_speed / 2.5
+                ralentizador_fin = now + 5000
+
+        if habilidad_actual == 3:
+            player_speed = base_speed * 1.8
+        elif habilidad_actual == 1 or habilidad_actual == 2: # Ensure speed resets if ability changes away from speed
+             player_speed = base_speed
