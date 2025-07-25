@@ -1,0 +1,16 @@
+Saludos, Ing. Luis:
+
+_______________________________________________________
+
+
+En el repositorio encontrará la versión completa del juego que desarrollé a lo largo del segundo y tercer parcial. Quisiera aclarar que cometí el error de no crear ni vincular el repositorio desde el inicio del proyecto. Por esta razón, la fecha del primer commit aparece muy cercana a la del último. Reconozco esta falta y me comprometo a seguir buenas prácticas en futuros proyectos, asegurando una documentación adecuada desde el primer día.
+
+Le agradezco su comprensión, cuídese mucho.
+
+_______________________________________________________
+
+Alumno: Carlos Yahir Chávez Guzmán.
+Número de cuenta: 202410050130.
+Asignatura: Programación Avanzada II.
+
+
