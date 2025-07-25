@@ -430,3 +430,72 @@ def game_loop():
             player_speed = base_speed * 1.8
         elif habilidad_actual == 1 or habilidad_actual == 2: # Ensure speed resets if ability changes away from speed
              player_speed = base_speed
+
+# Segmento 7: Lógica y Colisiones del Jefe Final
+# Este segmento se encarga de todo lo relacionado con el jefe final:
+# su movimiento para perseguir al jugador, la generación y movimiento de sus proyectiles,
+# las colisiones con el jugador (tanto por contacto como por proyectiles),
+# la reducción de su vida y la transición al siguiente nivel o victoria al ser derrotado.
+
+        # Jefe
+        if jefe_activo:
+            dx = player_pos[0] - jefe_pos[0]
+            dy = player_pos[1] - jefe_pos[1]
+            dist = math.hypot(dx, dy)
+            if dist != 0:
+                dx /= dist
+                dy /= dist
+            jefe_pos[0] += dx * jefe_speed
+            jefe_pos[1] += dy * jefe_speed
+
+            if now - ultimo_disparo_jefe >= jefe_disparo_delay:
+                jdx = player_pos[0] - jefe_pos[0]
+                jdy = player_pos[1] - jefe_pos[1]
+                dist = math.hypot(jdx, jdy)
+                if dist != 0:
+                    jdx /= dist
+                    jdy /= dist
+                jefe_proyectiles.append({'x': jefe_pos[0], 'y': jefe_pos[1], 'dx': jdx, 'dy': jdy})
+                ultimo_disparo_jefe = now
+
+            for j in jefe_proyectiles[:]:
+                j['x'] += j['dx'] * 5
+                j['y'] += j['dy'] * 5
+                if not (0 <= j['x'] <= WIDTH and 0 <= j['y'] <= HEIGHT):
+                    jefe_proyectiles.remove(j)
+                elif math.hypot(j['x'] - player_pos[0], j['y'] - player_pos[1]) < player_radius:
+                    player_health -= jefe_danio
+                    jefe_proyectiles.remove(j)
+
+            if math.hypot(jefe_pos[0] - player_pos[0], jefe_pos[1] - player_pos[1]) < player_radius + 25:
+                player_health -= jefe_danio // 2
+
+            for p in projectiles[:]:
+                if math.hypot(jefe_pos[0] - p['x'], jefe_pos[1] - p['y']) < 30:
+                    jefe_vida -= 1
+                    projectiles.remove(p)
+
+            if jefe_vida <= 0:
+                # Añadir mancha de sangre en la posición del jefe al morir
+                blood_stains.append({'x': jefe_pos[0], 'y': jefe_pos[1], 'alpha': 255})
+
+                jefe_activo = False
+                jefe_proyectiles.clear()
+                nivel_actual += 1
+                if nivel_actual <= max_nivel:
+                    mostrar_historia(nivel_actual)
+                enemy_speed += 0.7
+                enemy_spawn_delay = max(400, enemy_spawn_delay - 250)
+                # Ensure ability is set correctly after defeating a boss and advancing phase
+                # This ensures the ability is correctly applied when entering a new phase.
+                if nivel_actual == 2:
+                    habilidad_actual = 2
+                    player_speed = base_speed
+                elif nivel_actual == 3:
+                    habilidad_actual = 3
+                    player_speed = base_speed * 1.8 # Re-apply speed boost for phase 3
+                else: # For any level beyond 3, if you expand the game later
+                    habilidad_actual = 3
+                    player_speed = base_speed * 1.8
+
+                ralentizar_enemigos = False # Reset slowdown after boss
